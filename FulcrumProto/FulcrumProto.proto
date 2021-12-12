@@ -1,0 +1,64 @@
+syntax="proto3";
+
+package FulcrumProto;
+option go_package = "github.com/Lab3";
+
+/*
+    TODO: Metodos de consistencia
+*/
+
+service FulcrumServer {
+    // Broker
+    rpc GetClock (PlanetData) returns (PlanetClock) {}
+
+    // Leia -> Broker (Leia a traves de Broker)
+    rpc GetNumber (CityData) returns (CityRes) {}
+
+    // Informantes
+    rpc AddCity (NewCity) returns (CityStatus) {}
+
+    rpc DeleteCity (DelCity) returns (CityStatus) {}
+
+    rpc UpdateCity (UpCity) returns (CityStatus) {}
+}
+
+message PlanetData {
+    string planet = 1;
+}
+
+message PlanetClock {
+    repeated int32 clock = 1;
+}
+
+message CityData {
+    string planet = 1;
+    string city = 2;
+}
+
+message CityRes {
+    repeated int32 clock = 1;
+    int32 rebelds = 2;
+}
+
+message NewCity {
+    string planet = 1;
+    string city = 2;
+    int32 rebelds = 3; // 0 si no se especifica
+}
+
+message DelCity {
+    string planet = 1;
+    string city = 2;
+}
+
+message UpCity {
+    string planet = 1;
+    string city = 2;
+    int32 flag = 3; // 1 -> modificar nombre; 0 -> modificar cantidad
+    string newname = 4; // flag = 0 -> default value ""
+    int32 num = 5; // flag = 1 -> default value -1
+}
+
+message CityStatus {
+    repeated int32 clock = 1;
+}

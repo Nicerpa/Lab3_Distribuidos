@@ -1,0 +1,35 @@
+syntax="proto3";
+
+package BrokerProto;
+option go_package = "github.com/Lab3";
+
+service BrokerServer {
+    // Leia
+    rpc GetNumberRebelds (LeiaReq) returns (Rebelds) {}
+
+    // Informante
+    rpc GetIPCity (CityData) returns (CityRes) {}
+}
+
+message LeiaReq {
+    string planet = 1;
+    string city = 2;
+    string ip = 3;
+    repeated int32 clock = 4;
+}
+
+message Rebelds {
+    int32 rebelds = 1;
+    string ip = 2;
+    repeated int32 clock = 3;
+}
+
+message CityData {
+    string planet = 1;
+    repeated int32 clock = 3;
+    string ip = 4;
+}
+
+message CityRes {
+    string ip_des = 1;
+}
