@@ -2,6 +2,7 @@ syntax="proto3";
 
 package FulcrumProto;
 option go_package = "github.com/Lab3";
+import "google/protobuf/empty.proto";
 
 /*
     TODO: Metodos de consistencia
@@ -20,6 +21,37 @@ service FulcrumServer {
     rpc DeleteCity (DelCity) returns (CityStatus) {}
 
     rpc UpdateCity (UpCity) returns (CityStatus) {}
+
+    // Metodos consistencia
+
+    rpc RequestPlanetList (google.protobuf.Empty) returns (PlanetList) {} // Retorna la lista de planetas en el servidor
+
+    rpc RequestLog (LogReq) returns (Log) {} // retorna el clock y el archivo log para un planeta especifico
+
+    rpc UpdateFile (NewData) returns (Status); // Envia un nuevo clock y un archivo de planeta
+}
+
+message NewData {
+    repeated string file = 1;
+    repeated int32 clock = 2;
+    string planet = 3;
+}
+
+message Status {
+    int32 statusFlag = 1;
+}
+
+message LogReq {
+    string name = 2;
+}
+
+message Log {
+    repeated string logFile = 1;
+    repeated int32 clock = 2;
+}
+
+message PlanetList {
+    repeated string list = 1;   
 }
 
 message PlanetData {

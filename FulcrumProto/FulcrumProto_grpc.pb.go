@@ -4,6 +4,7 @@ package Lab3
 
 import (
 	context "context"
+	empty "github.com/golang/protobuf/ptypes/empty"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -20,12 +21,15 @@ const _ = grpc.SupportPackageIsVersion7
 type FulcrumServerClient interface {
 	// Broker
 	GetClock(ctx context.Context, in *PlanetData, opts ...grpc.CallOption) (*PlanetClock, error)
-	// Leia
+	// Leia -> Broker (Leia a traves de Broker)
 	GetNumber(ctx context.Context, in *CityData, opts ...grpc.CallOption) (*CityRes, error)
 	// Informantes
 	AddCity(ctx context.Context, in *NewCity, opts ...grpc.CallOption) (*CityStatus, error)
 	DeleteCity(ctx context.Context, in *DelCity, opts ...grpc.CallOption) (*CityStatus, error)
 	UpdateCity(ctx context.Context, in *UpCity, opts ...grpc.CallOption) (*CityStatus, error)
+	RequestPlanetList(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (*PlanetList, error)
+	RequestLog(ctx context.Context, in *LogReq, opts ...grpc.CallOption) (*Log, error)
+	UpdateFile(ctx context.Context, in *NewData, opts ...grpc.CallOption) (*Status, error)
 }
 
 type fulcrumServerClient struct {
@@ -81,18 +85,48 @@ func (c *fulcrumServerClient) UpdateCity(ctx context.Context, in *UpCity, opts .
 	return out, nil
 }
 
+func (c *fulcrumServerClient) RequestPlanetList(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (*PlanetList, error) {
+	out := new(PlanetList)
+	err := c.cc.Invoke(ctx, "/FulcrumProto.FulcrumServer/RequestPlanetList", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *fulcrumServerClient) RequestLog(ctx context.Context, in *LogReq, opts ...grpc.CallOption) (*Log, error) {
+	out := new(Log)
+	err := c.cc.Invoke(ctx, "/FulcrumProto.FulcrumServer/RequestLog", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *fulcrumServerClient) UpdateFile(ctx context.Context, in *NewData, opts ...grpc.CallOption) (*Status, error) {
+	out := new(Status)
+	err := c.cc.Invoke(ctx, "/FulcrumProto.FulcrumServer/UpdateFile", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // FulcrumServerServer is the server API for FulcrumServer service.
 // All implementations must embed UnimplementedFulcrumServerServer
 // for forward compatibility
 type FulcrumServerServer interface {
 	// Broker
 	GetClock(context.Context, *PlanetData) (*PlanetClock, error)
-	// Leia
+	// Leia -> Broker (Leia a traves de Broker)
 	GetNumber(context.Context, *CityData) (*CityRes, error)
 	// Informantes
 	AddCity(context.Context, *NewCity) (*CityStatus, error)
 	DeleteCity(context.Context, *DelCity) (*CityStatus, error)
 	UpdateCity(context.Context, *UpCity) (*CityStatus, error)
+	RequestPlanetList(context.Context, *empty.Empty) (*PlanetList, error)
+	RequestLog(context.Context, *LogReq) (*Log, error)
+	UpdateFile(context.Context, *NewData) (*Status, error)
 	mustEmbedUnimplementedFulcrumServerServer()
 }
 
@@ -114,6 +148,15 @@ func (UnimplementedFulcrumServerServer) DeleteCity(context.Context, *DelCity) (*
 }
 func (UnimplementedFulcrumServerServer) UpdateCity(context.Context, *UpCity) (*CityStatus, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateCity not implemented")
+}
+func (UnimplementedFulcrumServerServer) RequestPlanetList(context.Context, *empty.Empty) (*PlanetList, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RequestPlanetList not implemented")
+}
+func (UnimplementedFulcrumServerServer) RequestLog(context.Context, *LogReq) (*Log, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RequestLog not implemented")
+}
+func (UnimplementedFulcrumServerServer) UpdateFile(context.Context, *NewData) (*Status, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateFile not implemented")
 }
 func (UnimplementedFulcrumServerServer) mustEmbedUnimplementedFulcrumServerServer() {}
 
@@ -218,6 +261,60 @@ func _FulcrumServer_UpdateCity_Handler(srv interface{}, ctx context.Context, dec
 	return interceptor(ctx, in, info, handler)
 }
 
+func _FulcrumServer_RequestPlanetList_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(empty.Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(FulcrumServerServer).RequestPlanetList(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/FulcrumProto.FulcrumServer/RequestPlanetList",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(FulcrumServerServer).RequestPlanetList(ctx, req.(*empty.Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _FulcrumServer_RequestLog_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(LogReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(FulcrumServerServer).RequestLog(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/FulcrumProto.FulcrumServer/RequestLog",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(FulcrumServerServer).RequestLog(ctx, req.(*LogReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _FulcrumServer_UpdateFile_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(NewData)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(FulcrumServerServer).UpdateFile(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/FulcrumProto.FulcrumServer/UpdateFile",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(FulcrumServerServer).UpdateFile(ctx, req.(*NewData))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // FulcrumServer_ServiceDesc is the grpc.ServiceDesc for FulcrumServer service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -244,6 +341,18 @@ var FulcrumServer_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UpdateCity",
 			Handler:    _FulcrumServer_UpdateCity_Handler,
+		},
+		{
+			MethodName: "RequestPlanetList",
+			Handler:    _FulcrumServer_RequestPlanetList_Handler,
+		},
+		{
+			MethodName: "RequestLog",
+			Handler:    _FulcrumServer_RequestLog_Handler,
+		},
+		{
+			MethodName: "UpdateFile",
+			Handler:    _FulcrumServer_UpdateFile_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
