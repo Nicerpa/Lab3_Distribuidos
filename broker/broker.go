@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"math/rand"
 	"net"
 	"time"
 
@@ -56,10 +57,10 @@ func GetFulcrumClock(address string, planet string) []int32 {
 	r, err := c.GetClock(ctx, &fp.PlanetData{Planet: planet})
 
 	if err != nil {
-		log.Fatalf("No se pudo recibir clock del planeta %s: %v", planet, err)
+		log.Fatalf("No se pudo recibir clock del planeta %s: %v\n", planet, err)
 	}
 	clock := r.GetClock()
-	fmt.Printf("Se ha recibido el clock desde %s del planeta %s con valor %v", address, planet, clock)
+	fmt.Printf("Se ha recibido el clock desde %s del planeta %s con valor %v\n", address, planet, clock)
 
 	return clock
 }
@@ -90,19 +91,30 @@ func LatestVersion(clock_f1 int32, clock_f2 int32, clock_f3 int32, clock int32, 
 
 // Retorna la ip donde se encuentra la ultima version de un planeta
 func getSelectedIP(planet string, ip string, clock []int32) string {
-	clock_f1 := GetFulcrumClock(ip_f1, planet)
-	clock_f2 := GetFulcrumClock(ip_f2, planet)
-	clock_f3 := GetFulcrumClock(ip_f3, planet)
-
-	var index int
-
-	if ip != "" {
-		index = GetFulcrumNum(ip)
+	if ip == "" {
+		ran := rand.Intn(3)
+		if ran == 0 {
+			return ip_f1
+		} else if ran == 1 {
+			return ip_f2
+		} else {
+			return ip_f3
+		}
 	} else {
-		index = 0
-	}
+		clock_f1 := GetFulcrumClock(ip_f1, planet)
+		clock_f2 := GetFulcrumClock(ip_f2, planet)
+		clock_f3 := GetFulcrumClock(ip_f3, planet)
 
-	return LatestVersion(clock_f1[index], clock_f2[index], clock_f3[index], clock[index], ip)
+		var index int
+
+		if ip != "" {
+			index = GetFulcrumNum(ip)
+		} else {
+			index = 0
+		}
+
+		return LatestVersion(clock_f1[index], clock_f2[index], clock_f3[index], clock[index], ip)
+	}
 }
 
 // Atiende consulta de Leia sobre el numero de rebeldes en una ciudad
@@ -126,6 +138,7 @@ func (s *server) GetIPCity(ctx context.Context, in *bp.CityData) (*bp.CityRes, e
 
 	selected_ip := getSelectedIP(planet, ip, clock)
 
+	fmt.Printf("Se ha enviado la ip %s a un informante\n", selected_ip)
 	return &bp.CityRes{IpDes: selected_ip}, nil
 }
 
@@ -137,12 +150,13 @@ func ListenBrokerServer() {
 	}
 	s := grpc.NewServer()
 	bp.RegisterBrokerServerServer(s, &server{})
-	log.Printf("[*] Mos Eisley gRPC server listening at %v", lis.Addr())
+	log.Printf("[*] Mos Eisley gRPC server listening at %v\n", lis.Addr())
 	if err := s.Serve(lis); err != nil {
-		log.Fatalf("failed to serve: %v", err)
+		log.Fatalf("failed to serve: %v\n", err)
 	}
 }
 
 func main() {
+	rand.Seed(1)
 	ListenBrokerServer()
 }

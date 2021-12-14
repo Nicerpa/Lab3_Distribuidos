@@ -18,7 +18,9 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type BrokerServerClient interface {
+	// Leia
 	GetNumberRebelds(ctx context.Context, in *LeiaReq, opts ...grpc.CallOption) (*Rebelds, error)
+	// Informante
 	GetIPCity(ctx context.Context, in *CityData, opts ...grpc.CallOption) (*CityRes, error)
 }
 
@@ -52,7 +54,9 @@ func (c *brokerServerClient) GetIPCity(ctx context.Context, in *CityData, opts .
 // All implementations must embed UnimplementedBrokerServerServer
 // for forward compatibility
 type BrokerServerServer interface {
+	// Leia
 	GetNumberRebelds(context.Context, *LeiaReq) (*Rebelds, error)
+	// Informante
 	GetIPCity(context.Context, *CityData) (*CityRes, error)
 	mustEmbedUnimplementedBrokerServerServer()
 }

@@ -26,8 +26,8 @@ message Rebelds {
 
 message CityData {
     string planet = 1;
-    repeated int32 clock = 3;
-    string ip = 4;
+    repeated int32 clock = 2;
+    string ip = 3;
 }
 
 message CityRes {

@@ -28,8 +28,9 @@ type server struct {
 
 const (
 	index = 0
-	port  = ":50001" // Poner IP completa para el deploy
 )
+
+var port = os.Args[2] //":50001" // Poner IP completa para el deploy
 
 var fulcrum_addresses = []string{"localhost:50002", "localhost:50003"}
 
@@ -193,7 +194,14 @@ func updateCityRebelds(planet string, city string, newValue int32) {
 func (s *server) GetClock(ctx context.Context, in *fp.PlanetData) (*fp.PlanetClock, error) {
 	planet := in.GetPlanet()
 
-	return &fp.PlanetClock{Clock: clockMap[planet]}, nil
+	clock, ok := clockMap[planet]
+
+	if !ok {
+		clock = []int32{0, 0, 0}
+	}
+
+	fmt.Printf("Entregue el clock %v del planeta %s al broker\n", clock, planet)
+	return &fp.PlanetClock{Clock: clock}, nil
 }
 
 // Crea una ciudad en un planeta
@@ -209,6 +217,7 @@ func (s *server) AddCity(ctx context.Context, in *fp.NewCity) (*fp.CityStatus, e
 	}
 	clockMap[planet][index] = clockMap[planet][index] + 1
 
+	fmt.Printf("Se ha creado una ciudad de nombre %s en el planeta %s\n", city, planet)
 	return &fp.CityStatus{Clock: clockMap[planet]}, nil
 }
 
@@ -221,6 +230,7 @@ func (s *server) DeleteCity(ctx context.Context, in *fp.DelCity) (*fp.CityStatus
 
 	clockMap[planet][index] = clockMap[planet][index] + 1
 
+	fmt.Printf("Se ha destruido la ciudad de nombre %s en el planeta %s\n", city, planet)
 	return &fp.CityStatus{Clock: clockMap[planet]}, nil
 }
 
@@ -233,9 +243,11 @@ func (s *server) UpdateCity(ctx context.Context, in *fp.UpCity) (*fp.CityStatus,
 	if flag == 0 {
 		newValue := in.GetNum()
 		updateCityRebelds(planet, city, newValue)
+		fmt.Printf("Se ha actualizado el numero de rebeldes en la ciudad %s, planeta %s al valor de %d\n", city, planet, newValue)
 	} else {
 		newName := in.GetNewname()
 		updateCityName(planet, city, newName)
+		fmt.Printf("Se ha actualizado el nombre de la ciudad %s, planeta %s al nombre %s\n", city, planet, newName)
 	}
 
 	clockMap[planet][index] = clockMap[planet][index] + 1
@@ -269,7 +281,11 @@ func (s *server) RequestPlanetList(ctx context.Context, in *emptypb.Empty) (*fp.
 func (s *server) RequestLog(ctx context.Context, in *fp.LogReq) (*fp.Log, error) {
 	planet := in.GetName()
 
-	clock := clockMap[planet]
+	clock, ok := clockMap[planet]
+
+	if !ok {
+		clock = []int32{0, 0, 0}
+	}
 
 	input, err := ioutil.ReadFile(strings.Join([]string{planet, ".log"}, ""))
 	if err != nil {
@@ -291,7 +307,9 @@ func (s *server) UpdateFile(ctx context.Context, in *fp.NewData) (*fp.Status, er
 	updateFileContent(file, planet)
 	// TODO: AGREGAR UNA FUNCION QUE HAGA RESET A LOS LOG (TODOS!!!!!!!)
 	logName := strings.Join([]string{planet, "log"}, ".")
-	updateFileContent([]string{}, logName)
+	// updateFileContent([]string{}, logName)
+	f, _ := os.Create(logName)
+	f.Close()
 	return &fp.Status{StatusFlag: 0}, nil
 }
 
@@ -303,7 +321,7 @@ func ListenFulcrumServer() {
 	}
 	s := grpc.NewServer()
 	fp.RegisterFulcrumServerServer(s, &server{})
-	log.Printf("[*] Fulcrum %d gRPC server listening at %v", index+1, lis.Addr())
+	log.Printf("[*] Fulcrum %d gRPC server listening at %v\n", index+1, lis.Addr())
 	if err := s.Serve(lis); err != nil {
 		log.Fatalf("failed to serve: %v", err)
 	}
@@ -327,12 +345,12 @@ func GetPlanetList(address string) []string {
 	r, err := c.RequestPlanetList(ctx, &emptypb.Empty{})
 
 	if err != nil {
-		log.Fatalf("No se pudo recibir lista de planetas desde %s: %v", address, err)
+		log.Fatalf("No se pudo recibir lista de planetas desde %s: %v\n", address, err)
 	}
 
 	planetList := r.GetList()
 
-	fmt.Printf("Se ha recibido la lista de planetas desde la direccion %s", address)
+	fmt.Printf("Se ha recibido la lista de planetas desde la direccion %s\n", address)
 	return planetList
 }
 
@@ -363,20 +381,23 @@ func GetLogByPlanet(planet string, address string) ([]int32, []string) {
 func consistenciaINADOR(file []string, planet string) {
 	for _, line := range file {
 		lineArray := strings.Split(line, " ")
-		command := lineArray[0]
-		city := lineArray[2]
+		if len(lineArray) > 1 {
+			// fmt.Println(lineArray)
+			command := lineArray[0]
+			city := lineArray[2]
 
-		if command == "AddCity" {
-			value, _ := strconv.Atoi(lineArray[3])
-			addCity(planet, city, int32(value))
-		} else if command == "UpdateName" {
-			newName := lineArray[3]
-			updateCityName(planet, city, newName)
-		} else if command == "UpdateNumber" {
-			newValue, _ := strconv.Atoi(lineArray[3])
-			updateCityRebelds(planet, city, int32(newValue))
-		} else {
-			deleteCity(planet, city)
+			if command == "AddCity" {
+				value, _ := strconv.Atoi(lineArray[3])
+				addCity(planet, city, int32(value))
+			} else if command == "UpdateName" {
+				newName := lineArray[3]
+				updateCityName(planet, city, newName)
+			} else if command == "UpdateNumber" {
+				newValue, _ := strconv.Atoi(lineArray[3])
+				updateCityRebelds(planet, city, int32(newValue))
+			} else {
+				deleteCity(planet, city)
+			}
 		}
 	}
 }
@@ -397,10 +418,10 @@ func sendUpdatedPlanetData(planet string, clock []int32, address string) {
 	r, err := c.UpdateFile(ctx, &fp.NewData{Clock: clock, File: lines, Planet: planet})
 
 	if err != nil {
-		log.Fatalf("No se pudo enviar informacion actualizada del planeta %s a %s: %v", planet, address, err)
+		log.Fatalf("No se pudo enviar informacion actualizada del planeta %s a %s: %v\n", planet, address, err)
 	}
 	r.GetStatusFlag()
-	fmt.Printf("Se ha enviado correctamente informacion para actualizar el planeta %s a %s", planet, address)
+	fmt.Printf("Se ha enviado correctamente informacion para actualizar el planeta %s a %s\n", planet, address)
 }
 
 // Actualiza archivos locales en base a la data almacenada en los otros servidores fulcrum
@@ -408,17 +429,26 @@ func CheckConsistency() {
 	for _, fulcrumAddress := range fulcrum_addresses {
 		planetList := GetPlanetList(fulcrumAddress)
 
-		for _, planet := range planetList {
-			clock, fileArray := GetLogByPlanet(planet, fulcrumAddress)
-			consistenciaINADOR(fileArray, planet)
+		if len(planetList) > 0 {
+			for _, planet := range planetList {
+				clock, fileArray := GetLogByPlanet(planet, fulcrumAddress)
+				// fmt.Println(fileArray)
+				consistenciaINADOR(fileArray, planet)
 
-			v1 := clockMap[planet][index]
-			v2 := clock[index]
+				c1, ok := clockMap[planet]
 
-			if v1 > v2 {
-				clockMap[planet] = []int32{v1, v1, v1}
-			} else {
-				clockMap[planet] = []int32{v2, v2, v2}
+				if !ok {
+					c1 = []int32{0, 0, 0}
+				}
+
+				v1 := c1[index]
+				v2 := clock[index]
+
+				if v1 > v2 {
+					clockMap[planet] = []int32{v1, v1, v1}
+				} else {
+					clockMap[planet] = []int32{v2, v2, v2}
+				}
 			}
 		}
 	}
@@ -426,12 +456,24 @@ func CheckConsistency() {
 	for _, fulcumAddress := range fulcrum_addresses {
 		for planet, clockPlanet := range clockMap {
 			sendUpdatedPlanetData(planet, clockPlanet, fulcumAddress)
+			logName := strings.Join([]string{planet, "log"}, ".")
+			f, _ := os.Create(logName)
+			f.Close()
 		}
+	}
+}
+
+func ListenToConsistency() {
+	for range time.Tick(time.Second * 120) {
+		CheckConsistency()
 	}
 }
 
 //-----------------------------------------------------------------------------------------------
 
 func main() {
+	if os.Args[1] == "1" {
+		go ListenToConsistency()
+	}
 	ListenFulcrumServer()
 }
