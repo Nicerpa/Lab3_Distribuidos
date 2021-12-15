@@ -1,9 +1,3 @@
-/*
-  TO DO
-  - Programar distincion entre slave y master (2 minutos)
-  - Programar timer de 2 minutos
-*/
-
 package main
 
 import (
@@ -490,7 +484,7 @@ func CheckConsistency() {
 }
 
 func ListenToConsistency() {
-	for range time.Tick(time.Second * 50) {
+	for range time.Tick(time.Second * 120) {
 		CheckConsistency()
 	}
 }

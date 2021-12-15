@@ -1,0 +1,39 @@
+Integrantes:
+============
+
+    Nicolás Cerpa 201873587-6
+    Raimundo Gross 201873501-9
+    Branndom Muñoz 201873628-7
+
+Contenido de cada Maquina:
+==========================
+
+    dist101: En esta maquina se encuentra alojado el Broker
+
+    dist102: Leia, Fulcrum 1
+
+    dist103: Fulcrum 2, Informante
+
+    dist104: Fulcrum 3, Informante
+
+Orden de ejecución:
+===================
+
+    El orden de ejecución no es relevante mientras que la máquina dist102 sea la última.
+
+Supuestos:
+==========
+
+    Si es que se intenta agregar una ciudad ya existente con un número de rebeldes distinto
+    de 0 se actualizara el número de rebeldes en vez de agregar la ciudad duplicada. Y si el
+    nuevo número de rebeldes fuera 0 la acción no se lleva a cabo.
+
+Notas:
+======
+
+    Los archivos que se encuentran en esta entrega estan configurados para ser ejecutados de manera
+    local mientras que los archivos que se encuentran en las maquinas estan configurados para poder
+    ejecutarse en las distintas IP's
+
+Para más información existe un archivo README en cada maquina con instrucciones más especificas
+de ella.
