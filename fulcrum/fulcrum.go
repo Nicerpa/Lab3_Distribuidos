@@ -187,6 +187,17 @@ func updateCityRebelds(planet string, city string, newValue int32) {
 	logAccion("UpdateNumber", planet, city, strconv.Itoa(int(newValue)))
 }
 
+func exists(path string) (bool, error) {
+	_, err := os.Stat(path)
+	if err == nil {
+		return true, nil
+	}
+	if os.IsNotExist(err) {
+		return false, nil
+	}
+	return false, err
+}
+
 //-------------------------------------------------------------------------------------------------
 //							Funcionalidades de Servidor
 
@@ -210,7 +221,22 @@ func (s *server) AddCity(ctx context.Context, in *fp.NewCity) (*fp.CityStatus, e
 	city := in.GetCity()
 	rebelds := in.GetRebelds()
 
-	addCity(planet, city, rebelds)
+	exist, _ := exists(planet)
+
+	if exist {
+		lines := readFileContent(planet)
+		for _, line := range lines {
+			if len(line) > 1 {
+				p := strings.Split(line, " ")
+				fmt.Println("REBELDES: ", rebelds)
+				if p[1] == city && rebelds != 0 {
+					updateCityRebelds(planet, city, rebelds)
+				}
+			}
+		}
+	} else {
+		addCity(planet, city, rebelds)
+	}
 
 	if _, ok := clockMap[planet]; !ok {
 		clockMap[planet] = []int32{0, 0, 0}
@@ -464,7 +490,7 @@ func CheckConsistency() {
 }
 
 func ListenToConsistency() {
-	for range time.Tick(time.Second * 120) {
+	for range time.Tick(time.Second * 50) {
 		CheckConsistency()
 	}
 }
